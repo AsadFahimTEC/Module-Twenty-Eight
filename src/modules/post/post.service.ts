@@ -147,9 +147,9 @@ const getPostById = async (postId: string) => {
                             where: {
                                 status: CommentStatus.APPROVED
                             },
-                             orderBy: {
-                        createdAt: "asc"
-                    },
+                            orderBy: {
+                                createdAt: "asc"
+                            },
                             include: {
                                 replies: {
                                     where: {
@@ -157,9 +157,9 @@ const getPostById = async (postId: string) => {
                                         status: CommentStatus.APPROVED
 
                                     },
-                                     orderBy: {
-                        createdAt: "asc"
-                    },
+                                    orderBy: {
+                                        createdAt: "asc"
+                                    },
                                 }
                             }
                         }
@@ -167,7 +167,7 @@ const getPostById = async (postId: string) => {
                 },
                 _count: {
                     select: {
-                       comments: true
+                        comments: true
                     }
                 }
             }
@@ -177,7 +177,7 @@ const getPostById = async (postId: string) => {
 }
 
 const getMyPosts = async (authorId: string) => {
-     await prisma.user.findUniqueOrThrow({
+    await prisma.user.findUniqueOrThrow({
         where: {
             id: authorId,
             status: "ACTIVE"
@@ -193,7 +193,7 @@ const getMyPosts = async (authorId: string) => {
             authorId
         },
         orderBy: {
-          createdAt: "desc"  
+            createdAt: "desc"
         },
         include: {
             _count: {
@@ -212,7 +212,7 @@ const getMyPosts = async (authorId: string) => {
     //         authorId
     //     }
     // })
-    
+
 
     return result;
 }
@@ -222,7 +222,7 @@ const getMyPosts = async (authorId: string) => {
 // admin - sobar post update korte parbe.
 // */
 
-const updatePost = async(postId: string, data: Partial<Post>, authorId:string, isAdmin:boolean) =>{
+const updatePost = async (postId: string, data: Partial<Post>, authorId: string, isAdmin: boolean) => {
     const postData = await prisma.post.findFirstOrThrow({
         where: {
             id: postId
@@ -233,11 +233,11 @@ const updatePost = async(postId: string, data: Partial<Post>, authorId:string, i
         }
     })
 
-    if(!isAdmin && (postData.authorId !== authorId)){
+    if (!isAdmin && (postData.authorId !== authorId)) {
         throw new Error("You are not the owner/creator of the post!")
     }
 
-    if(!isAdmin){
+    if (!isAdmin) {
         delete data.isFeatured
     }
 
@@ -254,10 +254,10 @@ const updatePost = async(postId: string, data: Partial<Post>, authorId:string, i
 //**
 // 1. user - nijer created post delete korte parbe
 // 2. admin - sobar post delete korte parbe
- // */
+// */
 
- const deletePost = async(postId: string, authorId: string, isAdmin: boolean) => {
-     const postData = await prisma.post.findFirstOrThrow({
+const deletePost = async (postId: string, authorId: string, isAdmin: boolean) => {
+    const postData = await prisma.post.findFirstOrThrow({
         where: {
             id: postId
         },
@@ -267,7 +267,7 @@ const updatePost = async(postId: string, data: Partial<Post>, authorId:string, i
         }
     })
 
-     if(!isAdmin && (postData.authorId !== authorId)){
+    if (!isAdmin && (postData.authorId !== authorId)) {
         throw new Error("You are not the owner/creator of the post!")
     }
 
@@ -277,7 +277,33 @@ const updatePost = async(postId: string, data: Partial<Post>, authorId:string, i
         }
     })
 
- }
+}
+
+const getStats = async () => {
+    // postCount, publishedPosts, draftPosts, totalComments, totalViews
+    return await prisma.$transaction(async (tx) => {
+        const [totalPosts, publishedPosts, draftPosts, archivedPosts, totalComments, approvedComment] =
+            await Promise.all([
+                await tx.post.count(),
+                await tx.post.count({ where: { status: PostStatus.PUBLISHED } }),
+                await tx.post.count({ where: { status: PostStatus.DRAFT } }),
+                await tx.post.count({ where: { status: PostStatus.ARCHIVED } }),
+                await tx.comment.count(),
+                await tx.comment.count({ where: {status: CommentStatus.APPROVED}})
+
+            ])
+
+        return {
+            totalPosts,
+            publishedPosts,
+            draftPosts,
+            archivedPosts,
+            totalComments,
+            approvedComment
+        }
+
+    })
+}
 
 export const postService = {
     createPost,
@@ -285,5 +311,6 @@ export const postService = {
     getPostById,
     getMyPosts,
     updatePost,
-    deletePost
+    deletePost,
+    getStats
 }
