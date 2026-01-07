@@ -280,7 +280,6 @@ const deletePost = async (postId: string, authorId: string, isAdmin: boolean) =>
 }
 
 const getStats = async () => {
-    // postCount, publishedPosts, draftPosts, totalComments, totalViews
     return await prisma.$transaction(async (tx) => {
         const [totalPosts, publishedPosts, draftPosts, archivedPosts, totalComments, approvedComment, rejectComment, totalUsers, adminCount, userCount, totalViews] =
             await Promise.all([
